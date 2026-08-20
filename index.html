@@ -155,32 +155,32 @@
         return Math.round(v + (t - v) * a).toString(16).padStart(2, '0');
       }).join('');
     }
-    function luminance(hex) {
-      var c = hex2rgb(hex);
-      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
-    }
     function svg(tag, attrs) {
       var n = document.createElementNS(SVGNS, tag);
       for (var k in attrs) n.setAttribute(k, attrs[k]);
       return n;
     }
-    function ellipsePath(rx, ry) {
-      return 'M' + (-rx) + ' 0 A' + rx + ' ' + ry + ' 0 1 0 ' + rx + ' 0 A' + rx + ' ' + ry + ' 0 1 0 ' + (-rx) + ' 0 Z';
+
+    /* 竖向细长杏仁眼（局部坐标中心 0,0，两端略尖、中段圆润） */
+    function almond(hw, hh) {
+      return 'M 0 ' + (-hh) +
+        ' C ' + hw + ' ' + (-hh * 0.7) + ', ' + hw + ' ' + (hh * 0.5) + ', 0 ' + hh +
+        ' C ' + (-hw) + ' ' + (hh * 0.5) + ', ' + (-hw) + ' ' + (-hh * 0.7) + ', 0 ' + (-hh) + ' Z';
     }
 
-    /* ---------------- 眼睛形状（原创几何，局部坐标中心 0,0） ---------------- */
+    /* 眼睛形状：细长杏仁 + 三种线形（闭合 / 笑 / 怒） */
     var SHAPES = {
-      open:   { d: ellipsePath(10, 14) },
-      wide:   { d: ellipsePath(13, 16) },
-      half:   { d: ellipsePath(11, 7) },
-      focus:  { d: ellipsePath(6.5, 6.5) },
-      glance: { d: ellipsePath(10, 14) },
-      closed: { d: 'M -13 0 L 13 0', stroke: 4 },
-      smile:  { d: 'M -13 4 Q 0 -13 13 4', stroke: 4.5 },
-      angry:  { dL: 'M -13 -9 L 11 8', dR: 'M 13 -9 L -11 8', stroke: 4.5 }
+      open:   { d: almond(11, 19) },
+      wide:   { d: almond(13, 22) },
+      half:   { d: almond(12, 8) },
+      focus:  { d: almond(7, 13) },
+      glance: { d: almond(11, 19) },
+      closed: { d: 'M -15 0 L 15 0', stroke: 4.5 },
+      smile:  { d: 'M -15 6 Q 0 -17 15 6', stroke: 5 },
+      angry:  { dL: 'M -14 -11 L 12 9', dR: 'M 14 -11 L -12 9', stroke: 5 }
     };
 
-    /* ---------------- 32 种表情（原创配置） ---------------- */
+    /* 32 种表情（原创配置） */
     var GROUPS = [
       { key: 'life', name: '生命周期' },
       { key: 'emotion', name: '情绪反应' },
@@ -189,9 +189,9 @@
     var EMOTIONS = [
       { id: '00', group: 'life', name: '睡眠', desc: '双眼闭合成细线，身体缓慢呼吸，头顶飘起 zzz', eye: 'closed', color: '#E9E6DF', breathe: 0.02, blink: null, gaze: false, lookY: 5, fx: 'zzz' },
       { id: '01', group: 'life', name: '唤醒', desc: '半睁眼缓缓睁开，像刚从睡梦中醒来', eye: 'half', color: '#F0EDE6', breathe: 0.016, blink: null, lookY: 3 },
-      { id: '02', group: 'life', name: '待机放空', desc: '圆睁双眼，偶尔眨眼，目光跟随鼠标', eye: 'open', color: '#F3F0EA', breathe: 0.012, blink: [4000, 8000] },
+      { id: '02', group: 'life', name: '待机放空', desc: '圆睁双眼，偶尔眨眼，目光跟随鼠标，时不时自旋转圈甩彩带', eye: 'open', color: '#F3F0EA', breathe: 0.012, blink: [4000, 8000], antics: true },
       { id: '03', group: 'life', name: '好奇', desc: '眼睛微微上抬，头轻倾，四处打量', eye: 'open', color: '#F4F0E8', breathe: 0.01, blink: [3000, 6000], lookY: -5, tilt: 4 },
-      { id: '04', group: 'life', name: '发呆', desc: '半睁眼睛，目光低垂，魂游天外', eye: 'half', color: '#F0EDE6', breathe: 0.009, blink: [4500, 8500], lookY: 4 },
+      { id: '04', group: 'life', name: '发呆', desc: '半睁眼睛，目光低垂，魂游天外，偶尔自旋甩彩带', eye: 'half', color: '#F0EDE6', breathe: 0.009, blink: [4500, 8500], lookY: 4, antics: true },
       { id: '05', group: 'life', name: '加载苏醒', desc: '双眼左右交替眨眼，像系统逐步初始化', eye: 'open', color: '#F3F0EA', breathe: 0.01, blink: [800, 800], altBlink: true },
       { id: '06', group: 'life', name: '休眠', desc: '半闭眼睛，几乎静止，只剩极弱呼吸', eye: 'half', color: '#EBE8E1', breathe: 0.005, blink: null, gaze: false, lookY: 4, scale: 0.9 },
       { id: '07', group: 'life', name: '抖动唤醒', desc: '整球轻颤着睁开眼，甩掉困意', eye: 'open', color: '#F3F0EA', breathe: 0.008, blink: [3000, 6000], shake: 4 },
@@ -202,17 +202,17 @@
       { id: '13', group: 'emotion', name: '惊讶', desc: '双眼瞬间睁大，身体轻轻上抬', eye: 'wide', color: '#F4F0E9', breathe: 0.006, blink: [2500, 4500], scale: 1.15, lookY: -3 },
       { id: '14', group: 'emotion', name: '害羞', desc: '目光躲向一侧，脸颊泛起粉色', eye: 'glance', color: '#F4D3D0', breathe: 0.012, blink: [3000, 6000], lookX: -9, lookY: 4 },
       { id: '15', group: 'emotion', name: '疲惫', desc: '眼皮沉重半睁，目光向下耷拉', eye: 'half', color: '#EFECE5', breathe: 0.016, blink: null, lookY: 5, scale: 0.9 },
-      { id: '16', group: 'emotion', name: '专注', desc: '缩成小圆点的眼睛，两眼向内聚拢', eye: 'focus', color: '#F3F0EA', breathe: 0.004, blink: [3500, 6500], focus: true },
+      { id: '16', group: 'emotion', name: '专注', desc: '细长的眯眼向内聚拢，全神贯注', eye: 'focus', color: '#F3F0EA', breathe: 0.004, blink: [3500, 6500], focus: true },
       { id: '17', group: 'emotion', name: '慌张', desc: '瞪大的眼睛乱晃，整球细细发抖', eye: 'wide', color: '#F3F0EA', breathe: 0.006, blink: [1500, 3000], shake: 2.5, dart: true },
       { id: '18', group: 'emotion', name: '无奈', desc: '头一歪，双眼翻向斜上方', eye: 'glance', color: '#F1EEE7', breathe: 0.01, blink: [4500, 8000], tilt: 10, lookY: -8, lookX: 6 },
       { id: '19', group: 'emotion', name: '满意', desc: '笑眼有节奏地上下点动，像点头认可', eye: 'smile', color: '#F5EFE6', breathe: 0.012, blink: [3500, 7000], bob: 5, bobPer: 1050 },
       { id: '20', group: 'emotion', name: '困惑', desc: '两眼一大一小，各看各的方向', eyeL: 'wide', eyeR: 'half', color: '#F3F0EA', breathe: 0.008, blink: [3200, 6000], tilt: -5 },
       { id: '21', group: 'emotion', name: '生气', desc: '怒目斜线，脸色涨红，身体发抖', eye: 'angry', color: '#E4574A', breathe: 0.004, blink: [3500, 7000], shake: 1.5 },
 
-      { id: '30', group: 'agent', name: '思考中', desc: '眼睛向上翻，头顶一条光环环绕旋转', eye: 'focus', color: '#F3F0EA', breathe: 0.01, blink: [3500, 7000], lookY: -9, fx: 'orbit' },
+      { id: '30', group: 'agent', name: '思考中', desc: '眼睛向上翻，头顶一条彩色光环环绕旋转', eye: 'focus', color: '#F3F0EA', breathe: 0.01, blink: [3500, 7000], lookY: -9, fx: 'orbit' },
       { id: '31', group: 'agent', name: '接收任务', desc: '轻轻点一下头，确认收到', eye: 'open', color: '#F3F0EA', breathe: 0.008, blink: null, bob: 4, bobPer: 900 },
-      { id: '32', group: 'agent', name: '处理中忙碌', desc: '小圆点眼睛快速左右扫动', eye: 'focus', color: '#F3F0EA', breathe: 0.008, blink: [3200, 6000], scan: 10, scanPer: 1200 },
-      { id: '33', group: 'agent', name: '任务完成', desc: '笑眼 + 彩带环绕 + 撒花庆祝', eye: 'smile', color: '#F6EFE4', breathe: 0.012, blink: [2500, 5000], fx: 'confetti' },
+      { id: '32', group: 'agent', name: '处理中忙碌', desc: '细长的眼睛快速左右扫动', eye: 'focus', color: '#F3F0EA', breathe: 0.008, blink: [3200, 6000], scan: 10, scanPer: 1200 },
+      { id: '33', group: 'agent', name: '任务完成', desc: '笑眼 + 彩带环绕 + 撒花庆祝', eye: 'smile', color: '#F6EFE4', breathe: 0.012, blink: [2500, 5000], fx: 'confetti', spin: 2 },
       { id: '34', group: 'agent', name: '出错', desc: '双眼圆睁，脸色红白急促闪动', eye: 'wide', color: '#E25B5B', breathe: 0.006, blink: null, flash: ['#E25B5B', '#F6F3EC', '#E25B5B', '#F6F3EC', '#DE5555'] },
       { id: '35', group: 'agent', name: '等待输入', desc: '眼睛轻轻上下扫读，等待回应', eye: 'open', color: '#F3F0EA', breathe: 0.01, blink: [3000, 7000], scanY: 6, scanPer: 2200 },
       { id: '36', group: 'agent', name: '联网加载', desc: '左右眼交替眨，像信号在两端跳跃', eye: 'open', color: '#F3F0EA', breathe: 0.01, blink: [700, 700], altBlink: true },
@@ -222,6 +222,125 @@
       { id: '40', group: 'agent', name: '检索资料', desc: '眼睛快速左右扫动，高速检索', eye: 'wide', color: '#F3F0EA', breathe: 0.006, blink: [2000, 4000], scan: 12, scanPer: 700 },
       { id: '41', group: 'agent', name: '停止终止', desc: '眼睛慢慢收小半闭后定格', eye: 'closed', color: '#EBE8E2', breathe: 0.004, blink: null, gaze: false, scale: 0.85, lookY: 3 }
     ];
+
+    /* ---------------- 彩色丝带系统：椭圆轨道弧 + 5-stop 色相漂移渐变 ---------------- */
+    function makeRibbons(defs, layer) {
+      var items = [];
+      var uid = 0;
+      return {
+        spawn: function (cfg) {
+          if (items.length > 6) return;
+          var gid = 'rb' + (++seq);
+          var grad = svg('linearGradient', { id: gid, gradientUnits: 'userSpaceOnUse' });
+          var stops = [];
+          for (var i = 0; i < 5; i++) { var st = svg('stop', { offset: (i / 4).toFixed(3) }); grad.appendChild(st); stops.push(st); }
+          defs.appendChild(grad);
+          var p = svg('path', { fill: 'none', stroke: 'url(#' + gid + ')', 'stroke-linecap': 'round' });
+          layer.appendChild(p);
+          items.push({
+            lam: cfg.lam, vel: cfg.vel, span: cfg.span, rx: cfg.rx, ry: cfg.ry, w: cfg.w,
+            hue: cfg.hue, hueSpan: cfg.hueSpan, hueVel: cfg.hueVel,
+            persistent: !!cfg.persistent, life: 0, max: cfg.max || 2,
+            p: p, grad: grad, stops: stops
+          });
+        },
+        step: function (dt) {
+          for (var i = items.length - 1; i >= 0; i--) {
+            var r = items[i];
+            r.life += dt;
+            r.lam += r.vel * dt;
+            if (!r.persistent) r.vel *= Math.exp(-1.6 * dt);
+            if (!r.persistent && r.life > r.max) { r.p.remove(); r.grad.remove(); items.splice(i, 1); continue; }
+            var grow = Math.min(r.life / 0.3, 1);
+            grow = grow * grow * (3 - 2 * grow);
+            var fade = r.persistent ? 0.85 : Math.min(r.life / 0.2, 1) * Math.max(0, 1 - (r.life - r.max + 0.5) / 0.5);
+            var a0 = r.lam - r.span, a1 = r.lam;
+            var x0 = r.rx * Math.cos(a0), y0 = r.ry * Math.sin(a0);
+            var x1 = r.rx * Math.cos(a1), y1 = r.ry * Math.sin(a1);
+            var large = Math.abs(r.span) > Math.PI ? 1 : 0;
+            var sweep = r.span > 0 ? 1 : 0;
+            r.p.setAttribute('d', 'M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' A ' + r.rx + ' ' + r.ry + ' 0 ' + large + ' ' + sweep + ' ' + x1.toFixed(1) + ' ' + y1.toFixed(1));
+            r.p.setAttribute('stroke-width', (r.w * grow).toFixed(1));
+            r.p.setAttribute('opacity', fade.toFixed(2));
+            var hue = r.hue + r.hueVel * r.life;
+            for (var s = 0; s < 5; s++) {
+              var f = s / 4;
+              var hv = hue + f * r.hueSpan;
+              r.stops[s].setAttribute('stop-color', 'hsl(' + (((hv % 360) + 360) % 360).toFixed(0) + ' 72% ' + (52 + 16 * f).toFixed(0) + '%)');
+            }
+            r.grad.setAttribute('x1', x0.toFixed(1)); r.grad.setAttribute('y1', y0.toFixed(1));
+            r.grad.setAttribute('x2', x1.toFixed(1)); r.grad.setAttribute('y2', y1.toFixed(1));
+          }
+        },
+        clear: function () {
+          items.forEach(function (r) { r.p.remove(); r.grad.remove(); });
+          items = [];
+        }
+      };
+    }
+
+    /* 撒花粒子 */
+    function makeConfetti(layer) {
+      var COLORS = ['#f9705c', '#5b95f0', '#3fbe86', '#f5b13f', '#9a72ee', '#35c3bd'];
+      var parts = [];
+      for (var i = 0; i < 24; i++) {
+        var star = Math.random() < 0.22;
+        var n = star ? svg('path', { d: starPath(), fill: '#f4c34e' }) : svg('circle', { r: rand(2, 4), fill: COLORS[(Math.random() * COLORS.length) | 0] });
+        layer.appendChild(n);
+        var a = rand(0, TAU), spd = rand(120, 320);
+        parts.push({ n: n, x: 0, y: 0, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd - 60, life: 0, max: rand(0.5, 0.9), rot: rand(0, 360), vr: rand(-300, 300), r: star ? rand(5, 8) : 1 });
+      }
+      return {
+        step: function (dt) {
+          for (var i = parts.length - 1; i >= 0; i--) {
+            var p = parts[i];
+            p.life += dt;
+            if (p.life >= p.max) { p.n.remove(); parts.splice(i, 1); continue; }
+            p.x += p.vx * dt; p.y += p.vy * dt;
+            p.vy = p.vy * Math.pow(0.94, 60 * dt) + 40 * dt;
+            p.rot += p.vr * dt;
+            var u = p.life / p.max;
+            var fd = u < 0.1 ? u / 0.1 : Math.pow(1 - (u - 0.1) / 0.9, 1.6);
+            var sz = Math.max(p.r * (1 - 0.4 * u), 0.5);
+            p.n.setAttribute('opacity', fd.toFixed(2));
+            p.n.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + ') rotate(' + p.rot.toFixed(0) + ') scale(' + sz.toFixed(2) + ')');
+          }
+          return parts.length;
+        },
+        clear: function () { parts.forEach(function (p) { p.n.remove(); }); parts = []; }
+      };
+    }
+    function starPath() {
+      var pts = [];
+      for (var e = 0; e < 10; e++) {
+        var a = -Math.PI / 2 + e * Math.PI / 5;
+        var r = e % 2 === 0 ? 1 : 0.42;
+        pts.push((Math.cos(a) * r).toFixed(3) + ' ' + (Math.sin(a) * r).toFixed(3));
+      }
+      return 'M' + pts.join('L') + 'Z';
+    }
+    /* 睡眠 zzz */
+    function makeZzz(layer) {
+      var zs = [];
+      for (var i = 0; i < 3; i++) {
+        var t = svg('text', { x: 0, y: 0, fill: '#A8A296', opacity: 0, 'font-size': 20, 'font-weight': 700, 'font-style': 'italic', 'text-anchor': 'middle' });
+        t.textContent = 'z';
+        layer.appendChild(t);
+        zs.push(t);
+      }
+      return {
+        step: function (dt, now) {
+          for (var i = 0; i < 3; i++) {
+            var p = (now * 0.0004 + i / 3) % 1;
+            var o = (p < 0.18 ? p / 0.18 : 1 - (p - 0.18) / 0.82) * 0.8;
+            zs[i].setAttribute('opacity', o.toFixed(2));
+            zs[i].setAttribute('font-size', (14 + p * 12).toFixed(0));
+            zs[i].setAttribute('transform', 'translate(' + (60 + p * 40) + ' ' + (-62 - p * 46) + ')');
+          }
+        },
+        clear: function () { zs.forEach(function (t) { t.remove(); }); }
+      };
+    }
 
     /* ---------------- 引擎 ---------------- */
     function createBall(el, opts) {
@@ -258,18 +377,21 @@
       svgEl.appendChild(fxFront);
       el.appendChild(svgEl);
 
-      /* 眼睛基准位置（球面） */
-      var P = { lx: -36, ly: -42, rx: 36, ry: -42 };
+      var ribbons = makeRibbons(defs, fxFront);
+      var confetti = null, zzz = null, orbit = null;
+
+      var P = { lx: -35, ly: -42, rx: 35, ry: -42 };
       var eyeColor = opts.eyeColor || '#1A1A1A';
 
       var cur = null, curColor = '#F3F0EA', targetColor = '#F3F0EA', colorFrom = '#F3F0EA', colorAt = 0;
       var gazeX = 0, gazeY = 0, gazeTX = 0, gazeTY = 0;
-      var blinkStart = -1e9, blinkNext = 1e9, altBlink = false, blinkAt = 0;
+      var blinkStart = -1e9, blinkNext = 1e9, altBlink = false;
       var bornAt = performance.now();
       var shakeSeed = Math.random() * 100;
-      var lastNow = 0;
-      var rafId = 0;
-      var fx = null; /* 当前特效实例 */
+      var lastNow = 0, rafId = 0;
+      var spin = { active: false, yaw: 0, vel: 0, acc: 0 };
+      var anticNext = 1e9;
+      var bounceAt = -1;
 
       function setBodyColor(c) {
         stopA.setAttribute('stop-color', tone(c, 0.22));
@@ -294,102 +416,24 @@
         }
       }
 
-      function startFx() {
-        clearFx();
-        if (!cur) return;
-        if (cur.fx === 'orbit') fx = makeOrbit();
-        else if (cur.fx === 'zzz') fx = makeZzz();
-        else if (cur.fx === 'confetti') fx = makeConfetti();
-      }
       function clearFx() {
-        if (fx && fx.clear) fx.clear();
-        fx = null;
+        if (confetti) { confetti.clear(); confetti = null; }
+        if (zzz) { zzz.clear(); zzz = null; }
+        if (orbit) { ribbons.clear(); orbit = null; }
       }
-
-      /* 思考环带：一个环绕头顶旋转的椭圆 */
-      function makeOrbit() {
-        var ring = svg('ellipse', { rx: 120, ry: 40, fill: 'none', stroke: '#7aa5ff', 'stroke-width': 6, 'stroke-linecap': 'round', opacity: 0 });
-        fxBack.appendChild(ring);
-        var angle = 0, life = 0;
-        return {
-          clear: function () { ring.remove(); },
-          step: function (dt, now) {
-            life = Math.min(life + dt / 0.4, 1);
-            angle += dt * 2.2;
-            var k = 0.32 + 0.68 * Math.abs(Math.cos(angle));
-            ring.setAttribute('opacity', (0.75 * life).toFixed(2));
-            ring.setAttribute('transform', 'translate(0 -8) scale(1 ' + k.toFixed(2) + ')');
-            ring.setAttribute('stroke', 'hsl(' + (Math.floor(now / 6) % 360) + ' 70% 60%)');
-          }
-        };
-      }
-
-      /* 睡眠 zzz：三枚字母沿右上漂浮 */
-      function makeZzz() {
-        var zs = [];
-        for (var i = 0; i < 3; i++) {
-          var t = svg('text', { x: 0, y: 0, fill: '#A8A296', opacity: 0, 'font-size': 20, 'font-weight': 700, 'font-style': 'italic', 'text-anchor': 'middle' });
-          t.textContent = 'z';
-          fxFront.appendChild(t);
-          zs.push(t);
+      function startFx(e) {
+        clearFx();
+        if (e.fx === 'orbit') {
+          orbit = true;
+          ribbons.spawn({ lam: rand(0, TAU), vel: 1.9, span: 2.9, rx: 118, ry: 27, w: 7, hue: rand(0, 360), hueSpan: rand(70, 130), hueVel: 25, persistent: true });
+        } else if (e.fx === 'zzz') {
+          zzz = makeZzz(fxFront);
+        } else if (e.fx === 'confetti') {
+          confetti = makeConfetti(fxFront);
         }
-        return {
-          clear: function () { zs.forEach(function (t) { t.remove(); }); },
-          step: function (dt, now) {
-            for (var i = 0; i < 3; i++) {
-              var p = (now * 0.0004 + i / 3) % 1;
-              var o = (p < 0.18 ? p / 0.18 : 1 - (p - 0.18) / 0.82) * 0.8;
-              zs[i].setAttribute('opacity', o.toFixed(2));
-              zs[i].setAttribute('font-size', (14 + p * 12).toFixed(0));
-              zs[i].setAttribute('transform', 'translate(' + (60 + p * 40) + ' ' + (-62 - p * 46) + ')');
-            }
-          }
-        };
       }
 
-      /* 撒花：一次性粒子爆发 */
-      function makeConfetti() {
-        var COLORS = ['#f9705c', '#5b95f0', '#3fbe86', '#f5b13f', '#9a72ee', '#35c3bd'];
-        var parts = [];
-        for (var i = 0; i < 22; i++) {
-          var star = Math.random() < 0.2;
-          var n = star
-            ? svg('path', { d: starPath(), fill: '#f4c34e' })
-            : svg('circle', { r: rand(2, 4), fill: COLORS[(Math.random() * COLORS.length) | 0] });
-          fxFront.appendChild(n);
-          var a = rand(0, TAU), spd = rand(120, 300);
-          parts.push({ n: n, x: 0, y: 0, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd - 60, life: 0, max: rand(0.5, 0.9), rot: rand(0, 360), vr: rand(-300, 300), r: star ? rand(5, 8) : 1 });
-        }
-        return {
-          clear: function () { parts.forEach(function (p) { p.n.remove(); }); },
-          step: function (dt) {
-            for (var i = parts.length - 1; i >= 0; i--) {
-              var p = parts[i];
-              p.life += dt;
-              if (p.life >= p.max) { p.n.remove(); parts.splice(i, 1); continue; }
-              p.x += p.vx * dt; p.y += p.vy * dt;
-              p.vy = p.vy * Math.pow(0.94, 60 * dt) + 40 * dt;
-              p.rot += p.vr * dt;
-              var u = p.life / p.max;
-              var fd = u < 0.1 ? u / 0.1 : Math.pow(1 - (u - 0.1) / 0.9, 1.6);
-              var sz = Math.max(p.r * (1 - 0.4 * u), 0.5);
-              p.n.setAttribute('opacity', fd.toFixed(2));
-              p.n.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + ') rotate(' + p.rot.toFixed(0) + ') scale(' + sz.toFixed(2) + ')');
-            }
-          }
-        };
-      }
-      function starPath() {
-        var pts = [];
-        for (var e = 0; e < 10; e++) {
-          var a = -Math.PI / 2 + e * Math.PI / 5;
-          var r = e % 2 === 0 ? 1 : 0.42;
-          pts.push((Math.cos(a) * r).toFixed(3) + ' ' + (Math.sin(a) * r).toFixed(3));
-        }
-        return 'M' + pts.join('L') + 'Z';
-      }
-
-      function setEmotion(id, skipFx) {
+      function setEmotion(id) {
         var e = null;
         for (var i = 0; i < EMOTIONS.length; i++) if (EMOTIONS[i].id === id) e = EMOTIONS[i];
         if (!e) e = EMOTIONS[1] || EMOTIONS[0];
@@ -397,19 +441,57 @@
         colorFrom = curColor;
         targetColor = e.color;
         colorAt = 0;
-        blinkAt = performance.now();
-        blinkNext = e.blink ? blinkAt + rand(e.blink[0], e.blink[1]) : Infinity;
+        blinkStart = -1e9;
+        blinkNext = e.blink ? performance.now() + rand(e.blink[0], e.blink[1]) : 1e9;
         altBlink = !!e.altBlink;
-        if (!skipFx) startFx();
+        anticNext = e.antics ? performance.now() + rand(6000, 14000) : 1e9;
+        bounceAt = -1;
+        startFx(e);
+        if (e.spin) doSpin(e.spin);
       }
-
+      function doSpin(turns) {
+        spin.active = true;
+        spin.yaw = 0;
+        spin.vel = (turns || 1) * 13;
+        spin.acc = 0;
+      }
       function setGaze(nx, ny) { gazeTX = clamp(nx, -1, 1); gazeTY = clamp(ny, -1, 1); }
       function clearGaze() { gazeTX = 0; gazeTY = 0; }
 
       function applyFrame(now, dt) {
         var e = cur || EMOTIONS[1];
         var t = now - bornAt;
-        var rt = (now - blinkAt) / 1000;
+        var rt = (now - blinkStart) / 1000;
+
+        /* 待机小动作：随机自旋转圈甩彩带 */
+        if (e.antics && now >= anticNext) {
+          if (!spin.active) doSpin(rand(1, 2) | 0);
+          anticNext = now + rand(8000, 16000);
+        }
+
+        /* 自旋推进 */
+        var spinEyeX = 0, spinVis = 1, spinComp = 1;
+        if (spin.active) {
+          spin.yaw += spin.vel * dt;
+          spin.vel *= Math.exp(-2.4 * dt);
+          if (Math.abs(spin.vel) > 3.5) {
+            spin.acc += dt;
+            while (spin.acc > 0.12) {
+              spin.acc -= 0.12;
+              ribbons.spawn({
+                lam: spin.yaw + rand(-0.4, 0.4),
+                vel: (spin.vel > 0 ? 1 : -1) * rand(4, 7),
+                span: rand(1.8, 2.8), rx: rand(112, 130), ry: rand(18, 30),
+                w: rand(6, 9), hue: rand(0, 360), hueSpan: rand(60, 120), hueVel: rand(-40, 40),
+                max: rand(1.4, 2.4)
+              });
+            }
+          }
+          if (Math.abs(spin.vel) < 0.25) spin.active = false;
+          spinEyeX = Math.sin(spin.yaw) * 55;
+          spinVis = Math.cos(spin.yaw) > 0.02 ? 1 : 0;
+          spinComp = Math.max(Math.cos(spin.yaw), 0.04);
+        }
 
         /* 注视平滑 */
         var k = 1 - Math.exp(-5.6 * dt);
@@ -420,7 +502,7 @@
         colorAt = Math.min(colorAt + dt / 0.35, 1);
         curColor = colorAt >= 1 ? targetColor : mix(colorFrom, targetColor, colorAt);
         setBodyColor(curColor);
-        if (opts.color) { setBodyColor(opts.color); curColor = opts.color; }
+        if (opts.color) setBodyColor(opts.color);
 
         /* 眨眼 */
         if (e.blink && now >= blinkNext) {
@@ -431,65 +513,67 @@
         var blink = 1;
         if (bd < 160) blink = Math.abs(Math.sin(Math.PI * bd / 160));
         blink = Math.max(blink, 0.04);
-        var blinkL = blink;
-        var blinkR = altBlink ? (bd < 160 ? blink : 1) : blink;
-        if (altBlink && bd >= 160 && bd < 320) blinkR = Math.max(Math.abs(Math.sin(Math.PI * bd / 160)), 0.04);
+        var blinkL = blink, blinkR = blink;
+        if (altBlink) {
+          blinkL = bd < 160 ? blink : 1;
+          blinkR = (bd >= 160 && bd < 320) ? blink : (bd < 160 ? 1 : 1);
+          if (bd >= 160 && bd < 320) blinkR = Math.max(Math.abs(Math.sin(Math.PI * bd / 160)), 0.04);
+          else blinkR = bd < 160 ? 1 : blinkL;
+        }
 
-        /* 呼吸 */
+        /* 呼吸 / 浮动 / 抖动 / 摇头 / 弹跳 */
         var breathe = e.breathe || 0;
         var bs = 1 + breathe * Math.sin(now / 1000 * 1.15);
+        var bob = e.bob ? e.bob * Math.sin(TAU * t / (e.bobPer || 1400)) : 0;
+        var shake = e.shake ? e.shake * Math.exp(-rt * 2.2) * Math.sin(rt * 30 + shakeSeed) : 0;
+        var nod = e.nod ? Math.sin(TAU * t / 1600) * 7 * Math.exp(-rt * 1.5) : 0;
+        var bounceY = 0;
+        if (bounceAt >= 0) {
+          var be = (now - bounceAt) / 1000;
+          if (be > 1.2) bounceAt = -1;
+          else bounceY = -Math.abs(Math.sin(be * Math.PI * 2)) * 30 * (1 - be / 1.2);
+        }
 
-        /* 浮动 / 点头 / 摇头 */
-        var bob = 0;
-        if (e.bob) bob = e.bob * Math.sin(TAU * t / (e.bobPer || 1400));
-        var shake = 0;
-        if (e.shake) shake = e.shake * Math.exp(-rt * 2.2) * Math.sin(rt * 30 + shakeSeed);
-        var nod = 0;
-        if (e.nod) nod = Math.sin(TAU * t / 1600) * 7 * Math.exp(-rt * 1.5);
-
-        /* 扫描 / 抖动目光 */
+        /* 扫视 / 慌乱 */
         var scanX = 0, scanY = 0, dart = 0;
-        if (e.scan) scanX = e.scan * (function () { var p = (t % e.scanPer) / e.scanPer; return p < 0.5 ? p * 4 - 1 : 3 - p * 4; })();
+        if (e.scan) { var pp = (t % e.scanPer) / e.scanPer; scanX = e.scan * (pp < 0.5 ? pp * 4 - 1 : 3 - pp * 4); }
         if (e.scanY) scanY = e.scanY * Math.sin(TAU * t / e.scanPer);
-        if (e.dart) { dart = (Math.sin(t / 90) + Math.sin(t / 150)) / 2 * 4; }
+        if (e.dart) dart = (Math.sin(t / 90) + Math.sin(t / 150)) / 2 * 4;
 
-        /* 缩放脉冲 */
-        var pulse = 1;
-        if (e.pulse) pulse = 1 + e.pulse * 0.5 * (1 - Math.cos(TAU * t / e.pulsePer));
-
-        /* 颜色闪烁 */
-        var fl = 0;
+        var pulse = e.pulse ? 1 + e.pulse * 0.5 * (1 - Math.cos(TAU * t / e.pulsePer)) : 1;
         if (e.flash) {
-          var idx = Math.floor(rt * 4) % e.flash.length;
-          if (idx >= 0) setBodyColor(e.flash[idx]);
+          var fi = Math.floor(rt * 4) % e.flash.length;
+          setBodyColor(e.flash[fi]);
         }
 
         var eyeScale = (e.scale || 1) * (opts.eyeScale || 1) * pulse;
-        var gx = e.gaze === false ? 0 : (e.lookX || 0) + gazeX * 16 + scanX + dart;
-        var gy = e.gaze === false ? 0 : (e.lookY || 0) + gazeY * 10 + scanY;
-        var compress = 1 - 0.06 * Math.abs(gx) / 16;
+        var gx = e.gaze === false ? 0 : (e.lookX || 0) + gazeX * 16 + scanX + dart + spinEyeX;
+        var gy = e.gaze === false ? 0 : (e.lookY || 0) + gazeY * 11 + scanY;
+        var compress = (1 - 0.08 * Math.abs(gx) / 16) * spinComp;
 
-        /* 左右眼注视内聚（专注） */
-        var convergeL = e.focus ? 3 : 0, convergeR = e.focus ? -3 : 0;
-
+        var convL = e.focus ? 3 : 0, convR = e.focus ? -3 : 0;
         var tilt = (e.tilt || 0) + nod;
+
         bodyG.setAttribute('transform',
-          'translate(' + (shake).toFixed(1) + ' ' + (bob + (e.lookY && !e.gaze ? 0 : 0)).toFixed(1) + ')' +
+          'translate(' + (shake + (e.nod ? nod * 0.4 : 0)).toFixed(1) + ' ' + (bob + bounceY).toFixed(1) + ')' +
           ' rotate(' + tilt.toFixed(1) + ') scale(' + (bs * pulse).toFixed(3) + ')');
 
         function place(path, px, py, shapeKey, right, blk, cv) {
           drawEye(path, shapeKey, right);
-          var sx = eyeScale * compress * (right ? -1 : 1);
+          var sx = eyeScale * compress;
+          if (right) sx = -sx;
           var sy = eyeScale * blk;
-          var ox = px + gx + cv;
+          path.setAttribute('opacity', spinVis);
           path.setAttribute('transform',
-            'translate(' + ox.toFixed(1) + ' ' + (py + gy).toFixed(1) + ')' +
+            'translate(' + (px + gx + cv).toFixed(1) + ' ' + (py + gy).toFixed(1) + ')' +
             ' scale(' + sx.toFixed(3) + ' ' + sy.toFixed(3) + ')');
         }
-        place(eyeL, P.lx, P.ly, e.eyeL || e.eye, false, blinkL, convergeL);
-        place(eyeR, P.rx, P.ry, e.eyeR || e.eye, true, blinkR, convergeR);
+        place(eyeL, P.lx, P.ly, e.eyeL || e.eye, false, blinkL, convL);
+        place(eyeR, P.rx, P.ry, e.eyeR || e.eye, true, blinkR, convR);
 
-        if (fx) fx.step(dt, t);
+        ribbons.step(dt);
+        if (confetti && confetti.step(dt) === 0) { confetti.clear(); confetti = null; }
+        if (zzz) zzz.step(dt, now);
       }
 
       function loop(now) {
@@ -499,17 +583,19 @@
         rafId = requestAnimationFrame(loop);
       }
 
-      setEmotion(opts.emotion || '02', true);
+      setEmotion(opts.emotion || '02');
       if (autostart) rafId = requestAnimationFrame(loop);
       else applyFrame(performance.now(), 1 / 60);
 
       return {
         setEmotion: function (id) { setEmotion(id); },
+        spin: function (turns) { doSpin(turns || 1); },
         setGaze: setGaze,
         clearGaze: clearGaze,
         destroy: function () {
           if (rafId) cancelAnimationFrame(rafId);
           clearFx();
+          ribbons.clear();
           if (svgEl.parentNode) svgEl.parentNode.removeChild(svgEl);
         }
       };
@@ -547,10 +633,7 @@
     }
 
     cornerEngine = GrokBall.create(cornerEl, { emotion: '02', color: '#1a1a1a', eyeColor: '#f5f5f5' });
-    cornerEl.addEventListener('pointerdown', function () {
-      cornerEngine.setEmotion('33');
-      setTimeout(function () { cornerEngine.setEmotion('02'); }, 1600);
-    });
+    cornerEl.addEventListener('pointerdown', function () { cornerEngine.spin(1); });
 
     GROUPS.forEach(function (g) {
       var items = EMOTIONS.filter(function (s) { return s.group === g.key; });
