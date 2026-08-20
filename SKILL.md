@@ -13,33 +13,40 @@ description: 在业务系统中开发、接入与定制 Grok Ball 表情球组�
 
 核心卖点：**用一个 `emotionId` 就能把 AI 的情绪/工作状态变成看得见的动画表情**（例如 AI 正在「思考中」→ `30`，任务完成 → `33` 撒花庆祝，出错 → `34` 涨红）。
 
-## 它是怎么开发出来的（原创引擎，三层）
+## 它是怎么开发出来的（五层引擎）
 
-整个表情球由一个原创的轻量引擎实现，理解这三层即可快速读懂或修改：
+可读实现位于 `src/grok-ball.js`，理解下面五层即可快速读懂或修改：
 
-1. **眼睛形状层（`SHAPES`）**
-   - 8 种原创几何，全部是「局部坐标中心 `(0,0)`」的 SVG path：`open`（椭圆）、`wide`（大椭圆）、`half`（半闭）、`focus`（小点）、`glance`（斜视）、`closed`（闭合线）、`smile`（笑弧）、`angry`（怒目斜线）。
-   - 线形表情（闭合/笑/怒）用 `stroke` + 圆头描边；块形表情用 `fill`。
+1. **眼环几何层（`EB_RINGS`）**
+   - `EXPRESSIONS` 包含 25 组眼环，每组是 `[左眼48点, 右眼48点]`，眼睛位置、比例和左右不对称直接保存在坐标中。
+   - `SHAPES` 提供 blob/wedge/gem 身体轮廓，以及脸部拟合参数。
 
-2. **表情数据层（`EMOTIONS`）**
+2. **表情数据层（`EMOTION_SEED`）**
    - 32 条声明式配置，每条描述「这个表情长什么样、怎么动」：
-     - `eye` / `eyeL`+`eyeR`：眼睛形状（左右可不同，如困惑「一大一小」）
-     - `color`：身体色；`breathe`：呼吸幅度；`blink`：眨眼间隔（`null` 不眨）
-     - `lookX/lookY`：基础注视偏移；`tilt`：头倾斜；`bob`：上下浮动；`shake`：抖动；`nod`：摇头
-     - `scan/scanY`：扫视；`dart`：慌乱；`pulse`：缩放脉冲；`focus`：两眼内聚；`flash`：颜色闪烁；`fx`：特效
+     - `pool/poolMs/poolSpeed`：眼环索引池、轮换间隔和形变弹簧速度
+     - `body/eyes`：身体姿态与左右眼覆盖参数
+     - `blinkMs/openness/antics`：眨眼、常驻开合度和待机小动作
+     - `anims/sequence`：动画原语与关键帧序列
    - 表情 ID 是契约：`00-09` 生命周期、`10-29` 情绪反应、`30-49` 代理工作状态。
 
-3. **引擎层（`GrokBall.create`，对外 SDK）**
-   - 构建 SVG（径向渐变身体 + 左右眼 path + 特效层），每个活跃实例一个 rAF 循环。
-   - 核心动画：注视指数平滑 + 球面横向压缩（眼睛在球面移动时横向变窄，产生立体感）、眨眼（支持左右交替）、呼吸、颜色 lerp 过渡。
-   - 特效：`orbit`（思考光环）、`zzz`（睡眠漂浮字母）、`confetti`（撒花粒子）。
+3. **球面渲染层**
+   - 在眼睛当前高度采样身体轮廓的局部半宽，把横向位置换算为经度，再用余弦压缩眼宽。
+   - 自旋偏航后眼睛绕到背面时自动隐藏，保持真正贴合球面。
+
+4. **彩带与粒子层**
+   - 彩带使用 3D 轨道历史点形成头宽尾细拖尾，按深度拆成前后 path，并使用 5-stop 色相漂移渐变。
+   - 另有 `zzz` 和 confetti 粒子。
+
+5. **驱动层（`GrokBall.create`）**
+   - 共享 rAF、临界阻尼弹簧、眼环逐点插值、眨眼队列、注视平滑和 sequence 采样。
+   - TypeScript 使用方从 `src/grok-ball.ts` 导入同一运行时及完整类型，不维护第二套实现。
 
 ## 如何在业务系统接入
 
 ### 最小接入（三步）
 
 ```js
-// 1. 把 index.html 中的引擎脚本抽离成独立文件引入
+// 1. 引入独立运行时：<script src="./src/grok-ball.js"></script>
 // 2. 挂载到容器并指定初始表情
 const ball = GrokBall.create('#mount', { emotion: '02' });
 
@@ -91,11 +98,12 @@ GrokBall.create(thumbEl, { emotion: id, autostart: false, eyeScale: 1.4 });
 
 ## 定制新表情
 
-1. 在 `EMOTIONS` 追加一条配置，落到正确分组（ID 不能与现有冲突）。
-2. 组合已有眼睛形状 `SHAPES`，或用 `eyeL/eyeR` 搭配出左右不同；需要新形状时在 `SHAPES` 里加一个 path。
-3. 用 `lookX/lookY/bob/scan/shake/flash/fx` 等字段编排动画。
+1. 通过 `GrokBall.config.register()` 注册配置，或在 `EMOTION_SEED` 追加一条并落到正确分组（ID 不能冲突）。
+2. 用 `pool` 组合已有 25 组眼环；新增眼环时必须保持左右各 48 点，才能逐点插值。
+3. 用 `body/eyes/anims/sequence` 编排姿态和动画。
+4. 修改 `src/grok-ball.js` 后运行 `node scripts/build-inline.mjs` 更新单文件成品。
 
 ## 注意
 
-- 单文件产物 `index.html` 内联了全部引擎，接入时可抽取其中的 `<script>` 块，或直接 iframe 嵌入。
+- 单文件产物 `index.html` 内联压缩引擎；业务接入优先直接使用 `src/grok-ball.js` 或 `src/grok-ball.ts`。
 - 本项目为原创实现，**MIT 协议**，可自由使用、修改、商用。
