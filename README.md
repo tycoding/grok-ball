@@ -15,6 +15,26 @@
 - **可维护源码**：提供可直接引用的 JS 运行时和带 Agent 消息类型的 TypeScript 入口。
 - **MIT 协议**：免费使用、修改、商用均可。
 
+## 在线效果预览
+
+在线体验：[https://tycoding.github.io/grok-ball/](https://tycoding.github.io/grok-ball/)
+
+![Grok Ball 在线配置与预览界面](https://tycoding.github.io/grok-ball/assets/promo/01-overview.png)
+
+### 32 种表情与 Agent 状态
+
+![开心、惊讶、害羞与生气](https://tycoding.github.io/grok-ball/assets/promo/12-emotion-grid.png)
+
+![思考中、任务完成与检索资料](https://tycoding.github.io/grok-ball/assets/promo/13-agent-grid.png)
+
+### 动态切换与特效
+
+![Grok Ball 多表情连续切换](https://tycoding.github.io/grok-ball/assets/promo/10-expression-switch.gif)
+
+睡眠状态：[02-sleeping.png](https://tycoding.github.io/grok-ball/assets/promo/02-sleeping.png) · 思考环带：[07-thinking-orbit.png](https://tycoding.github.io/grok-ball/assets/promo/07-thinking-orbit.png) · 任务完成：[08-task-done.png](https://tycoding.github.io/grok-ball/assets/promo/08-task-done.png)
+
+所有宣传截图、GIF 和 MP4 素材均位于 [`assets/promo/`](./assets/promo/)，可直接复制线上链接用于文档或文章。
+
 ## 快速开始
 
 直接双击打开 `index.html`，或在浏览器中访问。
